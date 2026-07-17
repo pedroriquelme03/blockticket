@@ -1,10 +1,9 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 
 export default function AdminLoginPage() {
-  const supabase = useMemo(() => createClient(), []);
   const [email, setEmail] = useState("");
   const [sent, setSent] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -14,6 +13,8 @@ export default function AdminLoginPage() {
     e.preventDefault();
     setLoading(true);
     setError(null);
+    // Cria o client só no clique (evita instanciar durante o prerender do build).
+    const supabase = createClient();
     const { error } = await supabase.auth.signInWithOtp({
       email,
       options: {
