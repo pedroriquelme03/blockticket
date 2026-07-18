@@ -52,6 +52,9 @@ begin
 end;
 $$;
 
+-- Função de trigger não deve ser chamável via API (PostgREST).
+revoke all on function public.handle_new_user() from public, anon, authenticated;
+
 -- Promove admins de bootstrap que já tenham usuário.
 insert into public.platform_admins (user_id)
 select u.id from auth.users u
