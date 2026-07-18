@@ -30,7 +30,7 @@ export default function AdminLoginPage() {
   }
 
   return (
-    <div className="mx-auto max-w-sm">
+    <div className="mx-auto max-w-sm px-4 py-16">
       <h1 className="text-2xl font-bold">Acesso ao painel</h1>
       <p className="mt-1 text-sm text-slate-500">
         Enviaremos um link mágico de login para o seu e-mail.

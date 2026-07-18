@@ -56,13 +56,13 @@ export default async function TenantDashboard({
 
       <div className="flex gap-3">
         <Link
-          href={`/admin/t/${tenantId}/produtos`}
+          href={`/admin/t/${tenantId}/inventario`}
           className="rounded-md bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700"
         >
           Gerenciar produtos e tarifas
         </Link>
         <Link
-          href={`/admin/t/${tenantId}/pedidos`}
+          href={`/admin/t/${tenantId}/operacoes`}
           className="rounded-md border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50"
         >
           Ver pedidos

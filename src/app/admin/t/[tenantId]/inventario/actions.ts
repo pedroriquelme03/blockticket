@@ -44,8 +44,8 @@ export async function createProductAction(formData: FormData) {
     .single();
   if (error) throw new Error(error.message);
 
-  revalidatePath(`/admin/t/${tenantId}/produtos`);
-  redirect(`/admin/t/${tenantId}/produtos/${data.id}`);
+  revalidatePath(`/admin/t/${tenantId}/inventario`);
+  redirect(`/admin/t/${tenantId}/inventario/${data.id}`);
 }
 
 export async function deleteProductAction(formData: FormData) {
@@ -54,8 +54,8 @@ export async function deleteProductAction(formData: FormData) {
   const supabase = await createClient();
   const { error } = await supabase.from("products").delete().eq("id", id);
   if (error) throw new Error(error.message);
-  revalidatePath(`/admin/t/${tenantId}/produtos`);
-  redirect(`/admin/t/${tenantId}/produtos`);
+  revalidatePath(`/admin/t/${tenantId}/inventario`);
+  redirect(`/admin/t/${tenantId}/inventario`);
 }
 
 // ---- Variantes (tipos de ingresso) ---------------------------------------
@@ -75,7 +75,7 @@ export async function createVariantAction(formData: FormData) {
     sort_order: Number(str(formData, "sort_order")) || 0,
   });
   if (error) throw new Error(error.message);
-  revalidatePath(`/admin/t/${tenantId}/produtos/${productId}`);
+  revalidatePath(`/admin/t/${tenantId}/inventario/${productId}`);
 }
 
 export async function deleteVariantAction(formData: FormData) {
@@ -85,7 +85,7 @@ export async function deleteVariantAction(formData: FormData) {
   const supabase = await createClient();
   const { error } = await supabase.from("product_variants").delete().eq("id", id);
   if (error) throw new Error(error.message);
-  revalidatePath(`/admin/t/${tenantId}/produtos/${productId}`);
+  revalidatePath(`/admin/t/${tenantId}/inventario/${productId}`);
 }
 
 // ---- Tarifas por dia (rate rules) ----------------------------------------
@@ -108,7 +108,7 @@ export async function createRateRuleAction(formData: FormData) {
     priority: Number(str(formData, "priority")) || 0,
   });
   if (error) throw new Error(error.message);
-  revalidatePath(`/admin/t/${tenantId}/produtos/${productId}`);
+  revalidatePath(`/admin/t/${tenantId}/inventario/${productId}`);
 }
 
 export async function deleteRateRuleAction(formData: FormData) {
@@ -118,7 +118,7 @@ export async function deleteRateRuleAction(formData: FormData) {
   const supabase = await createClient();
   const { error } = await supabase.from("rate_rules").delete().eq("id", id);
   if (error) throw new Error(error.message);
-  revalidatePath(`/admin/t/${tenantId}/produtos/${productId}`);
+  revalidatePath(`/admin/t/${tenantId}/inventario/${productId}`);
 }
 
 // ---- Disponibilidade (capacidade por dia) --------------------------------
@@ -141,7 +141,7 @@ export async function createAvailabilityRuleAction(formData: FormData) {
     capacity,
   });
   if (error) throw new Error(error.message);
-  revalidatePath(`/admin/t/${tenantId}/produtos/${productId}`);
+  revalidatePath(`/admin/t/${tenantId}/inventario/${productId}`);
 }
 
 export async function deleteAvailabilityRuleAction(formData: FormData) {
@@ -151,5 +151,5 @@ export async function deleteAvailabilityRuleAction(formData: FormData) {
   const supabase = await createClient();
   const { error } = await supabase.from("availability_rules").delete().eq("id", id);
   if (error) throw new Error(error.message);
-  revalidatePath(`/admin/t/${tenantId}/produtos/${productId}`);
+  revalidatePath(`/admin/t/${tenantId}/inventario/${productId}`);
 }

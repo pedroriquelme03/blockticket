@@ -57,7 +57,7 @@ export default async function ProductsPage({
                     </td>
                     <td className="px-4 py-2 text-right">
                       <Link
-                        href={`/admin/t/${tenantId}/produtos/${p.id}`}
+                        href={`/admin/t/${tenantId}/inventario/${p.id}`}
                         className="text-blue-600 hover:underline"
                       >
                         Editar tarifas →

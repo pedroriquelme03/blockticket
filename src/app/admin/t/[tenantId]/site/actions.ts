@@ -29,7 +29,7 @@ export async function createDomainAction(formData: FormData) {
     if (error.code === "23505") throw new Error("Este domínio já está cadastrado.");
     throw new Error(error.message);
   }
-  revalidatePath(`/admin/t/${tenantId}/dominios`);
+  revalidatePath(`/admin/t/${tenantId}/site`);
 }
 
 export async function deleteDomainAction(formData: FormData) {
@@ -38,5 +38,5 @@ export async function deleteDomainAction(formData: FormData) {
   const supabase = await createClient();
   const { error } = await supabase.from("tenant_domains").delete().eq("id", id);
   if (error) throw new Error(error.message);
-  revalidatePath(`/admin/t/${tenantId}/dominios`);
+  revalidatePath(`/admin/t/${tenantId}/site`);
 }

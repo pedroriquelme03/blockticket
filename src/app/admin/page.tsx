@@ -22,6 +22,7 @@ export default async function AdminRoot() {
 
     if (!memberships || memberships.length === 0) {
       return (
+        <div className="mx-auto max-w-5xl px-4 py-8">
         <div className="rounded-lg border border-amber-200 bg-amber-50 p-6">
           <h1 className="font-semibold text-amber-900">Sem acesso</h1>
           <p className="mt-1 text-sm text-amber-800">
@@ -30,6 +31,7 @@ export default async function AdminRoot() {
           <div className="mt-4">
             <LogoutButton />
           </div>
+        </div>
         </div>
       );
     }
@@ -43,7 +45,7 @@ export default async function AdminRoot() {
     .order("name");
 
   return (
-    <div className="space-y-8">
+    <div className="mx-auto max-w-5xl space-y-8 px-4 py-8">
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold">Clientes</h1>

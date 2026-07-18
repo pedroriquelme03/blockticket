@@ -85,7 +85,7 @@ export default async function ProductEditPage({
     <div className="space-y-8">
       <div>
         <Link
-          href={`/admin/t/${tenantId}/produtos`}
+          href={`/admin/t/${tenantId}/inventario`}
           className="text-sm text-blue-600"
         >
           ← Produtos
