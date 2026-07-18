@@ -75,7 +75,7 @@ export const TENANT_SECTIONS: AdminSection[] = [
     key: "configuracoes",
     label: "Configurações",
     icon: "⚙️",
-    ready: false,
+    ready: true,
     description:
       "Dados do estabelecimento, usuários e permissões, gateway de pagamento e integrações.",
   },
