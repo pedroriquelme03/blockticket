@@ -47,6 +47,15 @@ export default async function AdminRoot() {
     .select("id, slug, name, status")
     .order("name");
 
+  const { data: paidOrders } = await supabase
+    .from("orders")
+    .select("total_cents, paid_cents")
+    .eq("status", "paid");
+  const gmv = (paidOrders ?? []).reduce(
+    (s, o) => s + (o.paid_cents || o.total_cents),
+    0
+  );
+
   return (
     <div className="mx-auto max-w-5xl space-y-8 px-4 py-8">
       <div className="flex items-center justify-between">
@@ -55,6 +64,26 @@ export default async function AdminRoot() {
           <p className="text-sm text-slate-500">{user.email} · plataforma</p>
         </div>
         <LogoutButton />
+      </div>
+
+      <div className="grid gap-4 sm:grid-cols-3">
+        <div className="rounded-lg border border-slate-200 bg-white p-4">
+          <p className="text-xs text-slate-500">Clientes</p>
+          <p className="mt-1 text-2xl font-bold">{tenants?.length ?? 0}</p>
+        </div>
+        <div className="rounded-lg border border-slate-200 bg-white p-4">
+          <p className="text-xs text-slate-500">Pedidos pagos</p>
+          <p className="mt-1 text-2xl font-bold">{paidOrders?.length ?? 0}</p>
+        </div>
+        <div className="rounded-lg border border-slate-200 bg-white p-4">
+          <p className="text-xs text-slate-500">GMV</p>
+          <p className="mt-1 text-2xl font-bold">
+            {new Intl.NumberFormat("pt-BR", {
+              style: "currency",
+              currency: "BRL",
+            }).format(gmv / 100)}
+          </p>
+        </div>
       </div>
 
       <section>

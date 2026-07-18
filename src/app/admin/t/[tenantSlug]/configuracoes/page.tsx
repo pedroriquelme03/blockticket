@@ -19,6 +19,10 @@ const ROLE_LABEL: Record<string, string> = {
 
 const MEMBER_MSG: Record<string, { text: string; ok: boolean }> = {
   added: { text: "Membro adicionado.", ok: true },
+  invited: {
+    text: "Convite enviado por e-mail. A pessoa precisa criar a conta em /admin/signup e depois ser adicionada de novo (ou você adiciona após o cadastro).",
+    ok: true,
+  },
   already_member: { text: "Esse usuário já é membro.", ok: false },
   user_not_found: {
     text: "Nenhuma conta com esse e-mail. Peça para a pessoa criar a conta em /admin/signup primeiro.",

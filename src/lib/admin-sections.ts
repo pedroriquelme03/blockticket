@@ -30,7 +30,7 @@ export const TENANT_SECTIONS: AdminSection[] = [
     key: "comercial",
     label: "Comercial",
     icon: "🏷️",
-    ready: false,
+    ready: true,
     description:
       "Cupons de desconto, canais de venda, campanhas e ponto de venda (PDV).",
   },
@@ -38,14 +38,14 @@ export const TENANT_SECTIONS: AdminSection[] = [
     key: "relatorios",
     label: "Relatórios",
     icon: "📊",
-    ready: false,
+    ready: true,
     description: "Relatórios de vendas, ocupação, ticket médio e desempenho por período.",
   },
   {
     key: "financeiro",
     label: "Financeiro",
     icon: "💰",
-    ready: false,
+    ready: true,
     description:
       "Recebimentos, repasses (split), extratos e conciliação com o gateway.",
   },
@@ -53,7 +53,7 @@ export const TENANT_SECTIONS: AdminSection[] = [
     key: "link",
     label: "Link de Vendas",
     icon: "🔗",
-    ready: false,
+    ready: true,
     description:
       "Página/link de vendas compartilhável para redes e bio (equivalente ao Planne Link).",
   },
@@ -83,14 +83,14 @@ export const TENANT_SECTIONS: AdminSection[] = [
     key: "manual",
     label: "Manual de uso",
     icon: "📖",
-    ready: false,
+    ready: true,
     description: "Guia passo a passo de como usar o sistema.",
   },
   {
     key: "suporte",
     label: "Suporte",
     icon: "💬",
-    ready: false,
+    ready: true,
     description: "Canal de atendimento da FozDev.",
   },
 ];

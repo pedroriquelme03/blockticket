@@ -1,5 +1,8 @@
 import { NextResponse } from "next/server";
-import { settlePaidCharge } from "@/lib/services/orders";
+import {
+  settlePaidCharge,
+  settleRefundedCharge,
+} from "@/lib/services/orders";
 
 // POST /api/webhooks/abacatepay?secret=... — recebe eventos do AbacatePay.
 // Docs: https://docs.abacatepay.com/pages/webhooks
@@ -25,17 +28,33 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "invalid json" }, { status: 400 });
   }
 
-  const event = body.event ?? "";
+  const event = (body.event ?? "").toLowerCase();
   const data = body.data ?? {};
-  const isPaid = event.endsWith(".completed") || data.status === "PAID";
   const orderId = data.metadata?.orderId ?? data.externalId;
+  const status = (data.status ?? "").toUpperCase();
 
-  // Sempre responde 200 para o AbacatePay não reenviar eventos que não tratamos.
-  if (isPaid && orderId && data.id) {
+  const isPaid =
+    event.endsWith(".completed") ||
+    status === "PAID" ||
+    event.includes("paid");
+  const isRefunded =
+    event.includes("refund") || status === "REFUNDED";
+  const isDisputed =
+    event.includes("disput") ||
+    event.includes("chargeback") ||
+    status === "DISPUTED" ||
+    status === "CHARGEBACK";
+
+  if (orderId && data.id) {
     try {
-      await settlePaidCharge(orderId, data.id, body);
+      if (isPaid) {
+        await settlePaidCharge(orderId, data.id, body);
+      } else if (isRefunded) {
+        await settleRefundedCharge(orderId, data.id, body, "refunded");
+      } else if (isDisputed) {
+        await settleRefundedCharge(orderId, data.id, body, "chargeback");
+      }
     } catch (e) {
-      // Loga e devolve 500 para o AbacatePay reenviar (falha transitória).
       console.error("[abacatepay webhook]", e);
       return NextResponse.json({ error: "processing failed" }, { status: 500 });
     }

@@ -64,7 +64,7 @@ export default async function ProductsPage({
                         href={`/admin/t/${tenantSlug}/inventario/${p.id}`}
                         className="text-blue-600 hover:underline"
                       >
-                        Editar tarifas →
+                        Editar →
                       </Link>
                     </td>
                   </tr>
@@ -123,6 +123,10 @@ export default async function ProductsPage({
               className="mt-1 w-full rounded-md border border-slate-300 px-3 py-2"
             />
           </div>
+          <label className="flex items-center gap-2 text-sm text-slate-700">
+            <input type="checkbox" name="requires_session" />
+            Exige escolha de horário/sessão
+          </label>
           <button
             type="submit"
             className="w-full rounded-md bg-slate-900 px-4 py-2 font-semibold text-white hover:bg-slate-800"

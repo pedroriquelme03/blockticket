@@ -2,7 +2,9 @@
 
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
+import { headers } from "next/headers";
 import { createClient } from "@/lib/supabase/server";
+import { sendMemberInviteEmail } from "@/lib/email";
 
 function str(fd: FormData, key: string): string {
   return String(fd.get(key) ?? "").trim();
@@ -41,7 +43,7 @@ export async function updatePagamentoAction(formData: FormData) {
   revalidatePath(`/admin/t/${tenantSlug}/configuracoes`);
 }
 
-// Adiciona um membro por e-mail (via RPC). Redireciona com o status na query.
+// Adiciona um membro por e-mail (via RPC). Se não tiver conta, envia convite.
 export async function addMemberAction(formData: FormData) {
   const tenantId = str(formData, "tenant_id");
   const tenantSlug = str(formData, "tenant_slug");
@@ -54,7 +56,27 @@ export async function addMemberAction(formData: FormData) {
     p_email: email,
     p_role: role,
   });
-  const status = error ? "error" : (data as string);
+  let status = error ? "error" : (data as string);
+
+  if (status === "user_not_found" && email) {
+    const { data: tenant } = await supabase
+      .from("tenants")
+      .select("name")
+      .eq("id", tenantId)
+      .single();
+    const h = await headers();
+    const host = h.get("x-forwarded-host") ?? h.get("host") ?? "localhost:3000";
+    const proto = h.get("x-forwarded-proto") ?? "https";
+    const signupUrl = `${proto}://${host}/admin/signup`;
+    await sendMemberInviteEmail({
+      to: email,
+      tenantName: tenant?.name ?? tenantSlug,
+      role,
+      signupUrl,
+    });
+    status = "invited";
+  }
+
   revalidatePath(`/admin/t/${tenantSlug}/configuracoes`);
   redirect(`/admin/t/${tenantSlug}/configuracoes?membro=${status}`);
 }

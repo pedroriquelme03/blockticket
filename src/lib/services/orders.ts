@@ -1,6 +1,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createPixCharge } from "@/lib/abacatepay";
+import { sendTicketsEmail } from "@/lib/email";
 import type { CartItemInput, Order, OrderItem, Ticket } from "@/lib/types";
 
 interface CustomerInput {
@@ -9,6 +10,9 @@ interface CustomerInput {
   phone?: string;
   document?: string;
 }
+
+// Hold curto (10 min) reduz abuso de estoque sem pagamento.
+const DEFAULT_HOLD_MINUTES = 10;
 
 // Reserva: cria pedido + hold de estoque (RPC transacional). Roda no contexto
 // do usuário (auth.uid() no RPC); guest fica com user_id null.
@@ -22,6 +26,7 @@ export async function createOrderWithHold(
     p_tenant: tenantId,
     p_items: items,
     p_customer: customer,
+    p_hold_minutes: DEFAULT_HOLD_MINUTES,
   });
   if (error) throw new Error(error.message);
   return data as string;
@@ -94,11 +99,25 @@ export async function createPixForOrder(orderId: string): Promise<{
     };
   }
 
+  const { data: tenant } = await admin
+    .from("tenants")
+    .select("psp_recipient_id")
+    .eq("id", order.tenant_id)
+    .single();
+
+  const platformFeeBps = Number(process.env.PLATFORM_FEE_BPS ?? "0");
+  const platformFeeCents =
+    platformFeeBps > 0
+      ? Math.round((order.total_cents * platformFeeBps) / 10000)
+      : undefined;
+
   const charge = await createPixCharge({
     amountCents: order.total_cents,
     description: `Pedido ${order.id.slice(0, 8)}`,
     externalId: order.id,
     metadata: { orderId: order.id },
+    recipientId: tenant?.psp_recipient_id,
+    platformFeeCents,
   });
 
   await admin.from("payments").insert({
@@ -133,4 +152,71 @@ export async function settlePaidCharge(
     .eq("provider", "abacatepay")
     .eq("provider_payment_id", chargeId);
   await confirmPayment(orderId);
+  await sendOrderTicketsEmail(orderId).catch((e) =>
+    console.error("[email tickets]", e)
+  );
+}
+
+// Estorno / chargeback via webhook.
+export async function settleRefundedCharge(
+  orderId: string,
+  chargeId: string,
+  payload: unknown,
+  kind: "refunded" | "chargeback"
+): Promise<void> {
+  const admin = createAdminClient();
+  await admin
+    .from("payments")
+    .update({
+      status: kind === "chargeback" ? "chargeback" : "refunded",
+      raw: payload as object,
+    })
+    .eq("provider", "abacatepay")
+    .eq("provider_payment_id", chargeId);
+
+  const { data: order } = await admin
+    .from("orders")
+    .select("status")
+    .eq("id", orderId)
+    .maybeSingle();
+
+  if (order && order.status === "paid") {
+    await admin.rpc("cancel_order", { p_order: orderId });
+  }
+}
+
+export async function sendOrderTicketsEmail(orderId: string): Promise<void> {
+  const admin = createAdminClient();
+  const { data: order } = await admin
+    .from("orders")
+    .select("id, tenant_id, customer_name, customer_email, status")
+    .eq("id", orderId)
+    .single();
+  if (!order?.customer_email || order.status !== "paid") return;
+
+  const [{ data: tenant }, { data: items }, { data: tickets }] = await Promise.all([
+    admin.from("tenants").select("name").eq("id", order.tenant_id).single(),
+    admin
+      .from("order_items")
+      .select("quantity, product_name, variant_name")
+      .eq("order_id", orderId),
+    admin
+      .from("tickets")
+      .select("code, visit_date, session_time")
+      .eq("order_id", orderId)
+      .eq("status", "valid"),
+  ]);
+
+  const itemsSummary = (items ?? [])
+    .map((i) => `${i.quantity}× ${i.product_name ?? ""} ${i.variant_name ?? ""}`.trim())
+    .join(", ");
+
+  await sendTicketsEmail({
+    to: order.customer_email,
+    customerName: order.customer_name,
+    orderId: order.id,
+    tenantName: tenant?.name ?? "BlockTicket",
+    tickets: tickets ?? [],
+    itemsSummary,
+  });
 }

@@ -26,10 +26,27 @@ interface CreatePixParams {
   metadata?: Record<string, unknown>;
   customer?: { name: string; email: string; taxId: string; cellphone: string };
   expiresIn?: number; // segundos
+  /** ID do recebedor no AbacatePay para split (psp_recipient_id do tenant). */
+  recipientId?: string | null;
+  /** Comissão da plataforma em centavos (retida no split). */
+  platformFeeCents?: number;
 }
 
 // Cria uma cobrança PIX com valor inline (sem pré-cadastrar produtos).
 export async function createPixCharge(params: CreatePixParams): Promise<PixCharge> {
+  const splits =
+    params.recipientId && params.platformFeeCents != null
+      ? [
+          {
+            recipientId: params.recipientId,
+            amount:
+              params.amountCents - Math.min(params.platformFeeCents, params.amountCents),
+          },
+        ]
+      : params.recipientId
+        ? [{ recipientId: params.recipientId }]
+        : undefined;
+
   const res = await fetch(`${BASE_URL}/transparents/create`, {
     method: "POST",
     headers: {
@@ -45,6 +62,7 @@ export async function createPixCharge(params: CreatePixParams): Promise<PixCharg
         externalId: params.externalId,
         metadata: params.metadata,
         ...(params.customer ? { customer: params.customer } : {}),
+        ...(splits ? { splits } : {}),
       },
     }),
   });

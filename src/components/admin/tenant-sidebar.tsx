@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useState } from "react";
 import { TENANT_SECTIONS, PROFILE_SECTION } from "@/lib/admin-sections";
 
 export function TenantSidebar({
@@ -16,6 +17,7 @@ export function TenantSidebar({
   isPlatform: boolean;
 }) {
   const pathname = usePathname();
+  const [open, setOpen] = useState(false);
   const base = `/admin/t/${tenantSlug}`;
 
   const isActive = (key: string) => {
@@ -27,6 +29,7 @@ export function TenantSidebar({
     <Link
       key={key}
       href={`${base}/${key}`}
+      onClick={() => setOpen(false)}
       className={[
         "flex items-center gap-2 rounded-md px-3 py-2 text-sm transition",
         isActive(key)
@@ -44,36 +47,76 @@ export function TenantSidebar({
     </Link>
   );
 
-  return (
-    <aside className="w-56 shrink-0">
-      <div className="sticky top-4 space-y-4">
-        <div>
-          {isPlatform && (
-            <Link href="/admin" className="text-xs text-blue-600">
-              ← Todos os clientes
-            </Link>
-          )}
-          <Link href={base} className="mt-1 block">
-            <h1 className="truncate text-lg font-bold text-slate-900">
-              {tenantName}
-            </h1>
-            <p className="text-xs text-slate-500">{subtitle}</p>
+  const nav = (
+    <div className="space-y-4">
+      <div>
+        {isPlatform && (
+          <Link href="/admin" className="text-xs text-blue-600">
+            ← Todos os clientes
           </Link>
-        </div>
-
-        <nav className="space-y-0.5">
-          {TENANT_SECTIONS.map((s) => item(s.key, s.label, s.icon, s.ready))}
-        </nav>
-
-        <div className="space-y-0.5 border-t border-slate-200 pt-3">
-          {item(
-            PROFILE_SECTION.key,
-            PROFILE_SECTION.label,
-            PROFILE_SECTION.icon,
-            PROFILE_SECTION.ready
-          )}
-        </div>
+        )}
+        <Link href={base} className="mt-1 block" onClick={() => setOpen(false)}>
+          <h1 className="truncate text-lg font-bold text-slate-900">
+            {tenantName}
+          </h1>
+          <p className="text-xs text-slate-500">{subtitle}</p>
+        </Link>
       </div>
-    </aside>
+
+      <nav className="space-y-0.5">
+        {TENANT_SECTIONS.map((s) => item(s.key, s.label, s.icon, s.ready))}
+      </nav>
+
+      <div className="space-y-0.5 border-t border-slate-200 pt-3">
+        {item(
+          PROFILE_SECTION.key,
+          PROFILE_SECTION.label,
+          PROFILE_SECTION.icon,
+          PROFILE_SECTION.ready
+        )}
+      </div>
+    </div>
+  );
+
+  return (
+    <>
+      <div className="flex items-center justify-between lg:hidden">
+        <button
+          type="button"
+          onClick={() => setOpen(true)}
+          className="rounded-md border border-slate-300 px-3 py-2 text-sm font-medium"
+        >
+          Menu
+        </button>
+        <span className="truncate text-sm font-semibold">{tenantName}</span>
+      </div>
+
+      {open && (
+        <div className="fixed inset-0 z-40 lg:hidden">
+          <button
+            type="button"
+            className="absolute inset-0 bg-black/40"
+            aria-label="Fechar menu"
+            onClick={() => setOpen(false)}
+          />
+          <aside className="absolute left-0 top-0 h-full w-64 overflow-y-auto bg-white p-4 shadow-xl">
+            <div className="mb-4 flex justify-end">
+              <button
+                type="button"
+                onClick={() => setOpen(false)}
+                className="text-sm text-slate-500"
+              >
+                Fechar
+              </button>
+            </div>
+            {nav}
+          </aside>
+        </div>
+      )}
+
+      <aside className="hidden w-56 shrink-0 lg:block">
+        <div className="sticky top-4">{nav}</div>
+      </aside>
+    </>
   );
 }
