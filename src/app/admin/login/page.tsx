@@ -1,11 +1,21 @@
 "use client";
 
+import Link from "next/link";
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 
+function traduzErro(msg: string): string {
+  if (/invalid login credentials/i.test(msg)) return "E-mail ou senha inválidos.";
+  if (/email not confirmed/i.test(msg))
+    return "E-mail ainda não confirmado. Confirme pelo link enviado ou peça ao admin.";
+  return msg;
+}
+
 export default function AdminLoginPage() {
+  const router = useRouter();
   const [email, setEmail] = useState("");
-  const [sent, setSent] = useState(false);
+  const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
@@ -13,53 +23,65 @@ export default function AdminLoginPage() {
     e.preventDefault();
     setLoading(true);
     setError(null);
-    // Cria o client só no clique (evita instanciar durante o prerender do build).
     const supabase = createClient();
-    const { error } = await supabase.auth.signInWithOtp({
-      email,
-      options: {
-        emailRedirectTo: `${window.location.origin}/admin/auth/callback`,
-      },
-    });
-    setLoading(false);
+    const { error } = await supabase.auth.signInWithPassword({ email, password });
     if (error) {
-      setError(error.message);
+      setError(traduzErro(error.message));
+      setLoading(false);
       return;
     }
-    setSent(true);
+    router.push("/admin");
+    router.refresh();
   }
 
   return (
     <div className="mx-auto max-w-sm px-4 py-16">
       <h1 className="text-2xl font-bold">Acesso ao painel</h1>
-      <p className="mt-1 text-sm text-slate-500">
-        Enviaremos um link mágico de login para o seu e-mail.
-      </p>
+      <p className="mt-1 text-sm text-slate-500">Entre com seu e-mail e senha.</p>
 
-      {sent ? (
-        <p className="mt-6 rounded-md bg-green-50 p-4 text-sm text-green-800">
-          Link enviado! Verifique <strong>{email}</strong> e clique para entrar.
-        </p>
-      ) : (
-        <form onSubmit={handleLogin} className="mt-6 space-y-4">
+      <form onSubmit={handleLogin} className="mt-6 space-y-4">
+        <div>
+          <label className="block text-sm font-medium text-slate-700">E-mail</label>
           <input
             type="email"
             required
-            placeholder="seu@email.com"
+            autoComplete="email"
+            placeholder="voce@email.com"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
-            className="w-full rounded-md border border-slate-300 px-3 py-2"
+            className="mt-1 w-full rounded-md border border-slate-300 px-3 py-2"
           />
-          {error && <p className="text-sm text-red-600">{error}</p>}
-          <button
-            type="submit"
-            disabled={loading}
-            className="w-full rounded-md bg-slate-900 px-6 py-3 font-semibold text-white transition hover:bg-slate-800 disabled:opacity-40"
-          >
-            {loading ? "Enviando…" : "Enviar link de acesso"}
-          </button>
-        </form>
-      )}
+        </div>
+        <div>
+          <label className="block text-sm font-medium text-slate-700">Senha</label>
+          <input
+            type="password"
+            required
+            autoComplete="current-password"
+            placeholder="••••••••"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            className="mt-1 w-full rounded-md border border-slate-300 px-3 py-2"
+          />
+        </div>
+
+        {error && <p className="text-sm text-red-600">{error}</p>}
+
+        <button
+          type="submit"
+          disabled={loading}
+          className="w-full rounded-md bg-slate-900 px-6 py-3 font-semibold text-white transition hover:bg-slate-800 disabled:opacity-40"
+        >
+          {loading ? "Entrando…" : "Entrar"}
+        </button>
+      </form>
+
+      <p className="mt-4 text-center text-sm text-slate-500">
+        Não tem conta?{" "}
+        <Link href="/admin/signup" className="text-blue-600 hover:underline">
+          Criar conta
+        </Link>
+      </p>
     </div>
   );
 }

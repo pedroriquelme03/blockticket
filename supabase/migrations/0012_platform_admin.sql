@@ -12,7 +12,9 @@ create table public.platform_admin_emails (
   email      text primary key,
   created_at timestamptz not null default now()
 );
-insert into public.platform_admin_emails (email) values ('pedroriquelmefoz@gmail.com')
+insert into public.platform_admin_emails (email) values
+  ('pedroriquelmefoz@gmail.com'),
+  ('admin@fozdev.com.br')
 on conflict do nothing;
 
 -- Platform admins (por user_id).
