@@ -1,142 +1,88 @@
+import Link from "next/link";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
-import { getCurrentTenant } from "@/lib/services/tenant";
-import { formatBRL, formatDateBR } from "@/lib/format";
+import { requireUser } from "@/lib/auth";
 import { LogoutButton } from "./logout-button";
+import { createTenantAction } from "./actions";
 
 export const dynamic = "force-dynamic";
 
-const STATUS_LABEL: Record<string, string> = {
-  draft: "Rascunho",
-  pending_payment: "Aguardando pgto",
-  paid: "Pago",
-  partially_paid: "Parcial",
-  cancelled: "Cancelado",
-  expired: "Expirado",
-  refunded: "Estornado",
-};
-
-export default async function AdminDashboard() {
+export default async function AdminRoot() {
+  const user = await requireUser();
   const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
 
-  if (!user) redirect("/admin/login");
+  const { data: platform } = await supabase.rpc("is_platform_admin");
 
-  const tenant = await getCurrentTenant();
-  if (!tenant) {
-    return <p>Tenant não encontrado.</p>;
-  }
+  // --- Usuário comum (staff de cliente): manda para o painel do seu tenant. ---
+  if (!platform) {
+    const { data: memberships } = await supabase
+      .from("memberships")
+      .select("tenant_id")
+      .eq("user_id", user.id);
 
-  // Confere se o usuário é staff deste tenant (RLS também protege as queries).
-  const { data: membership } = await supabase
-    .from("memberships")
-    .select("role")
-    .eq("tenant_id", tenant.id)
-    .eq("user_id", user.id)
-    .maybeSingle();
-
-  if (!membership) {
-    return (
-      <div className="rounded-lg border border-amber-200 bg-amber-50 p-6">
-        <h1 className="font-semibold text-amber-900">Sem acesso</h1>
-        <p className="mt-1 text-sm text-amber-800">
-          {user.email} não tem vínculo com {tenant.name}. Peça a um owner para
-          adicionar você em <code>memberships</code>.
-        </p>
-        <div className="mt-4">
-          <LogoutButton />
+    if (!memberships || memberships.length === 0) {
+      return (
+        <div className="rounded-lg border border-amber-200 bg-amber-50 p-6">
+          <h1 className="font-semibold text-amber-900">Sem acesso</h1>
+          <p className="mt-1 text-sm text-amber-800">
+            {user.email} ainda não está vinculado a nenhum cliente.
+          </p>
+          <div className="mt-4">
+            <LogoutButton />
+          </div>
         </div>
-      </div>
-    );
+      );
+    }
+    redirect(`/admin/t/${memberships[0].tenant_id}`);
   }
 
-  const [{ data: products }, { data: orders }] = await Promise.all([
-    supabase
-      .from("products")
-      .select("id, name, is_active")
-      .eq("tenant_id", tenant.id)
-      .order("name"),
-    supabase
-      .from("orders")
-      .select("id, status, customer_name, total_cents, created_at")
-      .eq("tenant_id", tenant.id)
-      .order("created_at", { ascending: false })
-      .limit(20),
-  ]);
+  // --- Platform admin (FozDev): visão de todos os clientes. ---
+  const { data: tenants } = await supabase
+    .from("tenants")
+    .select("id, slug, name, status")
+    .order("name");
 
   return (
     <div className="space-y-8">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold">{tenant.name}</h1>
-          <p className="text-sm text-slate-500">
-            {user.email} · {membership.role}
-          </p>
+          <h1 className="text-2xl font-bold">Clientes</h1>
+          <p className="text-sm text-slate-500">{user.email} · plataforma</p>
         </div>
         <LogoutButton />
       </div>
 
       <section>
-        <h2 className="mb-3 text-lg font-semibold">Produtos</h2>
         <div className="overflow-hidden rounded-lg border border-slate-200 bg-white">
           <table className="w-full text-sm">
             <thead className="bg-slate-50 text-left text-slate-500">
               <tr>
-                <th className="px-4 py-2 font-medium">Nome</th>
-                <th className="px-4 py-2 font-medium">Status</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-100">
-              {(products ?? []).map((p) => (
-                <tr key={p.id}>
-                  <td className="px-4 py-2">{p.name}</td>
-                  <td className="px-4 py-2">
-                    {p.is_active ? "Ativo" : "Inativo"}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      </section>
-
-      <section>
-        <h2 className="mb-3 text-lg font-semibold">Pedidos recentes</h2>
-        <div className="overflow-hidden rounded-lg border border-slate-200 bg-white">
-          <table className="w-full text-sm">
-            <thead className="bg-slate-50 text-left text-slate-500">
-              <tr>
-                <th className="px-4 py-2 font-medium">Pedido</th>
                 <th className="px-4 py-2 font-medium">Cliente</th>
+                <th className="px-4 py-2 font-medium">Slug</th>
                 <th className="px-4 py-2 font-medium">Status</th>
-                <th className="px-4 py-2 font-medium">Data</th>
-                <th className="px-4 py-2 text-right font-medium">Total</th>
+                <th className="px-4 py-2"></th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
-              {(orders ?? []).length === 0 ? (
+              {(tenants ?? []).length === 0 ? (
                 <tr>
-                  <td colSpan={5} className="px-4 py-6 text-center text-slate-400">
-                    Nenhum pedido ainda.
+                  <td colSpan={4} className="px-4 py-6 text-center text-slate-400">
+                    Nenhum cliente cadastrado.
                   </td>
                 </tr>
               ) : (
-                (orders ?? []).map((o) => (
-                  <tr key={o.id}>
-                    <td className="px-4 py-2 font-mono text-xs">
-                      {o.id.slice(0, 8)}
-                    </td>
-                    <td className="px-4 py-2">{o.customer_name ?? "—"}</td>
-                    <td className="px-4 py-2">
-                      {STATUS_LABEL[o.status] ?? o.status}
-                    </td>
-                    <td className="px-4 py-2">
-                      {formatDateBR(o.created_at.slice(0, 10))}
-                    </td>
+                (tenants ?? []).map((t) => (
+                  <tr key={t.id}>
+                    <td className="px-4 py-2 font-medium">{t.name}</td>
+                    <td className="px-4 py-2 text-slate-500">{t.slug}</td>
+                    <td className="px-4 py-2">{t.status}</td>
                     <td className="px-4 py-2 text-right">
-                      {formatBRL(o.total_cents)}
+                      <Link
+                        href={`/admin/t/${t.id}`}
+                        className="text-blue-600 hover:underline"
+                      >
+                        Acessar painel →
+                      </Link>
                     </td>
                   </tr>
                 ))
@@ -144,6 +90,57 @@ export default async function AdminDashboard() {
             </tbody>
           </table>
         </div>
+      </section>
+
+      <section className="max-w-md">
+        <h2 className="mb-3 text-lg font-semibold">Novo cliente</h2>
+        <form
+          action={createTenantAction}
+          className="space-y-3 rounded-lg border border-slate-200 bg-white p-5"
+        >
+          <div>
+            <label className="block text-sm font-medium text-slate-700">
+              Nome
+            </label>
+            <input
+              name="name"
+              required
+              placeholder="Aquamania"
+              className="mt-1 w-full rounded-md border border-slate-300 px-3 py-2"
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-slate-700">
+              Slug (rota da loja)
+            </label>
+            <input
+              name="slug"
+              required
+              placeholder="aquamania"
+              className="mt-1 w-full rounded-md border border-slate-300 px-3 py-2"
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-slate-700">
+              E-mail do admin do cliente
+            </label>
+            <input
+              name="email"
+              type="email"
+              placeholder="dono@cliente.com"
+              className="mt-1 w-full rounded-md border border-slate-300 px-3 py-2"
+            />
+            <p className="mt-1 text-xs text-slate-500">
+              Vira owner do cliente automaticamente no 1º login.
+            </p>
+          </div>
+          <button
+            type="submit"
+            className="w-full rounded-md bg-slate-900 px-4 py-2 font-semibold text-white hover:bg-slate-800"
+          >
+            Criar cliente
+          </button>
+        </form>
       </section>
     </div>
   );

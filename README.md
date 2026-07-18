@@ -15,8 +15,15 @@ validado primeiro com a Aquamania.
 - [x] **Passo 1 — Schema do banco** (`supabase/migrations`, `docs/schema.md`)
 - [x] **Passo 2 — Estrutura Next.js** (loja / admin / camada de serviços)
 - [x] **Passo 3 — Fluxo mínimo:** listar → checar disponibilidade → reservar → pagar (PIX/AbacatePay) → confirmar
-- [ ] CRUD do painel admin (cadastro de produtos, variantes e tarifas por dia)
+- [x] **Painel admin 2 níveis:** plataforma (FozDev vê/cria/acessa todos os clientes) + cliente (produtos, variantes, tarifas por dia, disponibilidade, pedidos)
 - [ ] Split de pagamento, afiliados, integração com catraca
+
+## Níveis de acesso
+
+- **Platform admin (FozDev):** e-mails em `platform_admin_emails`. Acessa todos os
+  tenants em `/admin` e entra no painel de cada um.
+- **Cliente (tenant):** owner/admin/staff via `memberships`. Gerencia só o próprio
+  tenant em `/admin/t/[tenantId]`. RLS garante o isolamento.
 
 ## Rodar localmente
 
