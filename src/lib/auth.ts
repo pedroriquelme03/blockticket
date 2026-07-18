@@ -26,41 +26,57 @@ export async function isPlatformAdmin(): Promise<boolean> {
 
 export type TenantRole = "owner" | "admin" | "staff" | "platform";
 
-// Contexto de acesso a um tenant. Garante que o usuário é platform admin ou
-// membro do tenant; caso contrário retorna allowed=false (a RLS também protege).
-export async function getTenantAccess(tenantId: string) {
+// Resolve um tenant pelo slug (para as páginas do painel obterem o id/UUID).
+// O acesso é garantido pelo layout (getTenantAccess) + RLS.
+export async function getAdminTenant(slug: string) {
+  const supabase = await createClient();
+  const { data } = await supabase
+    .from("tenants")
+    .select("id, slug, name")
+    .eq("slug", slug)
+    .maybeSingle();
+  return data ?? null;
+}
+
+// Contexto de acesso a um tenant pelo SLUG (usado nas rotas /admin/t/[tenantSlug]).
+// Resolve o tenant pelo slug e devolve também o id (UUID) para uso no banco.
+// Garante que o usuário é platform admin ou membro; senão allowed=false (RLS também protege).
+export async function getTenantAccess(slug: string) {
   const supabase = await createClient();
   const {
     data: { user },
   } = await supabase.auth.getUser();
   if (!user) redirect("/admin/login");
 
-  const [{ data: platform }, { data: tenant }, { data: membership }] =
-    await Promise.all([
-      supabase.rpc("is_platform_admin"),
-      supabase
-        .from("tenants")
-        .select("id, slug, name, settings")
-        .eq("id", tenantId)
-        .maybeSingle(),
-      supabase
-        .from("memberships")
-        .select("role")
-        .eq("tenant_id", tenantId)
-        .eq("user_id", user.id)
-        .maybeSingle(),
-    ]);
+  const { data: tenant } = await supabase
+    .from("tenants")
+    .select("id, slug, name, settings")
+    .eq("slug", slug)
+    .maybeSingle();
 
+  const { data: platform } = await supabase.rpc("is_platform_admin");
   const isPlatform = platform === true;
+
+  let membershipRole: string | null = null;
+  if (tenant) {
+    const { data: membership } = await supabase
+      .from("memberships")
+      .select("role")
+      .eq("tenant_id", tenant.id)
+      .eq("user_id", user.id)
+      .maybeSingle();
+    membershipRole = membership?.role ?? null;
+  }
+
   const role: TenantRole | null = isPlatform
     ? "platform"
-    : (membership?.role as TenantRole | undefined) ?? null;
+    : (membershipRole as TenantRole | null);
 
   return {
     user,
     tenant,
     isPlatform,
     role,
-    allowed: Boolean(tenant) && (isPlatform || Boolean(membership)),
+    allowed: Boolean(tenant) && (isPlatform || membershipRole !== null),
   };
 }

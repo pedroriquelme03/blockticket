@@ -21,10 +21,12 @@ function weekdays(fd: FormData): number[] {
 function slugify(v: string): string {
   return v.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
 }
+// tenant_id = UUID (banco); tenant_slug = slug (rotas).
 
 // ---- Produtos ------------------------------------------------------------
 export async function createProductAction(formData: FormData) {
   const tenantId = str(formData, "tenant_id");
+  const tenantSlug = str(formData, "tenant_slug");
   const name = str(formData, "name");
   const slug = slugify(str(formData, "slug") || name);
   if (!tenantId || !name) throw new Error("Dados incompletos");
@@ -44,23 +46,24 @@ export async function createProductAction(formData: FormData) {
     .single();
   if (error) throw new Error(error.message);
 
-  revalidatePath(`/admin/t/${tenantId}/inventario`);
-  redirect(`/admin/t/${tenantId}/inventario/${data.id}`);
+  revalidatePath(`/admin/t/${tenantSlug}/inventario`);
+  redirect(`/admin/t/${tenantSlug}/inventario/${data.id}`);
 }
 
 export async function deleteProductAction(formData: FormData) {
-  const tenantId = str(formData, "tenant_id");
+  const tenantSlug = str(formData, "tenant_slug");
   const id = str(formData, "id");
   const supabase = await createClient();
   const { error } = await supabase.from("products").delete().eq("id", id);
   if (error) throw new Error(error.message);
-  revalidatePath(`/admin/t/${tenantId}/inventario`);
-  redirect(`/admin/t/${tenantId}/inventario`);
+  revalidatePath(`/admin/t/${tenantSlug}/inventario`);
+  redirect(`/admin/t/${tenantSlug}/inventario`);
 }
 
 // ---- Variantes (tipos de ingresso) ---------------------------------------
 export async function createVariantAction(formData: FormData) {
   const tenantId = str(formData, "tenant_id");
+  const tenantSlug = str(formData, "tenant_slug");
   const productId = str(formData, "product_id");
   const name = str(formData, "name");
   const cents = parseBRLToCents(str(formData, "price"));
@@ -75,22 +78,23 @@ export async function createVariantAction(formData: FormData) {
     sort_order: Number(str(formData, "sort_order")) || 0,
   });
   if (error) throw new Error(error.message);
-  revalidatePath(`/admin/t/${tenantId}/inventario/${productId}`);
+  revalidatePath(`/admin/t/${tenantSlug}/inventario/${productId}`);
 }
 
 export async function deleteVariantAction(formData: FormData) {
-  const tenantId = str(formData, "tenant_id");
+  const tenantSlug = str(formData, "tenant_slug");
   const productId = str(formData, "product_id");
   const id = str(formData, "id");
   const supabase = await createClient();
   const { error } = await supabase.from("product_variants").delete().eq("id", id);
   if (error) throw new Error(error.message);
-  revalidatePath(`/admin/t/${tenantId}/inventario/${productId}`);
+  revalidatePath(`/admin/t/${tenantSlug}/inventario/${productId}`);
 }
 
 // ---- Tarifas por dia (rate rules) ----------------------------------------
 export async function createRateRuleAction(formData: FormData) {
   const tenantId = str(formData, "tenant_id");
+  const tenantSlug = str(formData, "tenant_slug");
   const productId = str(formData, "product_id");
   const variantId = str(formData, "variant_id") || null;
   const cents = parseBRLToCents(str(formData, "price"));
@@ -108,22 +112,23 @@ export async function createRateRuleAction(formData: FormData) {
     priority: Number(str(formData, "priority")) || 0,
   });
   if (error) throw new Error(error.message);
-  revalidatePath(`/admin/t/${tenantId}/inventario/${productId}`);
+  revalidatePath(`/admin/t/${tenantSlug}/inventario/${productId}`);
 }
 
 export async function deleteRateRuleAction(formData: FormData) {
-  const tenantId = str(formData, "tenant_id");
+  const tenantSlug = str(formData, "tenant_slug");
   const productId = str(formData, "product_id");
   const id = str(formData, "id");
   const supabase = await createClient();
   const { error } = await supabase.from("rate_rules").delete().eq("id", id);
   if (error) throw new Error(error.message);
-  revalidatePath(`/admin/t/${tenantId}/inventario/${productId}`);
+  revalidatePath(`/admin/t/${tenantSlug}/inventario/${productId}`);
 }
 
 // ---- Disponibilidade (capacidade por dia) --------------------------------
 export async function createAvailabilityRuleAction(formData: FormData) {
   const tenantId = str(formData, "tenant_id");
+  const tenantSlug = str(formData, "tenant_slug");
   const productId = str(formData, "product_id");
   const capacity = Number(str(formData, "capacity"));
   if (!Number.isInteger(capacity) || capacity < 0) {
@@ -141,15 +146,15 @@ export async function createAvailabilityRuleAction(formData: FormData) {
     capacity,
   });
   if (error) throw new Error(error.message);
-  revalidatePath(`/admin/t/${tenantId}/inventario/${productId}`);
+  revalidatePath(`/admin/t/${tenantSlug}/inventario/${productId}`);
 }
 
 export async function deleteAvailabilityRuleAction(formData: FormData) {
-  const tenantId = str(formData, "tenant_id");
+  const tenantSlug = str(formData, "tenant_slug");
   const productId = str(formData, "product_id");
   const id = str(formData, "id");
   const supabase = await createClient();
   const { error } = await supabase.from("availability_rules").delete().eq("id", id);
   if (error) throw new Error(error.message);
-  revalidatePath(`/admin/t/${tenantId}/inventario/${productId}`);
+  revalidatePath(`/admin/t/${tenantSlug}/inventario/${productId}`);
 }

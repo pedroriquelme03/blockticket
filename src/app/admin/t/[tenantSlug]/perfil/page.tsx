@@ -6,10 +6,10 @@ export const dynamic = "force-dynamic";
 export default async function PerfilPage({
   params,
 }: {
-  params: Promise<{ tenantId: string }>;
+  params: Promise<{ tenantSlug: string }>;
 }) {
-  const { tenantId } = await params;
-  const { user, isPlatform, role } = await getTenantAccess(tenantId);
+  const { tenantSlug } = await params;
+  const { user, isPlatform, role } = await getTenantAccess(tenantSlug);
 
   const rows = [
     { label: "E-mail", value: user?.email ?? "—" },

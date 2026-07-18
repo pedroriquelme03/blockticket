@@ -1,5 +1,7 @@
 import Link from "next/link";
+import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
+import { getAdminTenant } from "@/lib/auth";
 import { createProductAction } from "./actions";
 
 export const dynamic = "force-dynamic";
@@ -13,15 +15,17 @@ const TYPE_LABEL: Record<string, string> = {
 export default async function ProductsPage({
   params,
 }: {
-  params: Promise<{ tenantId: string }>;
+  params: Promise<{ tenantSlug: string }>;
 }) {
-  const { tenantId } = await params;
+  const { tenantSlug } = await params;
+  const tenant = await getAdminTenant(tenantSlug);
+  if (!tenant) notFound();
   const supabase = await createClient();
 
   const { data: products } = await supabase
     .from("products")
     .select("id, name, slug, type, is_active")
-    .eq("tenant_id", tenantId)
+    .eq("tenant_id", tenant.id)
     .order("name");
 
   return (
@@ -57,7 +61,7 @@ export default async function ProductsPage({
                     </td>
                     <td className="px-4 py-2 text-right">
                       <Link
-                        href={`/admin/t/${tenantId}/inventario/${p.id}`}
+                        href={`/admin/t/${tenantSlug}/inventario/${p.id}`}
                         className="text-blue-600 hover:underline"
                       >
                         Editar tarifas →
@@ -77,7 +81,8 @@ export default async function ProductsPage({
           action={createProductAction}
           className="space-y-3 rounded-lg border border-slate-200 bg-white p-5"
         >
-          <input type="hidden" name="tenant_id" value={tenantId} />
+          <input type="hidden" name="tenant_id" value={tenant.id} />
+          <input type="hidden" name="tenant_slug" value={tenantSlug} />
           <div>
             <label className="block text-sm font-medium text-slate-700">Nome</label>
             <input

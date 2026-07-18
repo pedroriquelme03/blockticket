@@ -5,18 +5,18 @@ import { usePathname } from "next/navigation";
 import { TENANT_SECTIONS, PROFILE_SECTION } from "@/lib/admin-sections";
 
 export function TenantSidebar({
-  tenantId,
+  tenantSlug,
   tenantName,
   subtitle,
   isPlatform,
 }: {
-  tenantId: string;
+  tenantSlug: string;
   tenantName: string;
   subtitle: string;
   isPlatform: boolean;
 }) {
   const pathname = usePathname();
-  const base = `/admin/t/${tenantId}`;
+  const base = `/admin/t/${tenantSlug}`;
 
   const isActive = (key: string) => {
     const href = `${base}/${key}`;

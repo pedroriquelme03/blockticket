@@ -24,18 +24,14 @@ export async function createTenantAction(formData: FormData) {
   }
 
   const supabase = await createClient();
-  const { data, error } = await supabase
-    .from("tenants")
-    .insert({
-      name,
-      slug,
-      settings: email ? { bootstrap_admin_email: email } : {},
-    })
-    .select("id")
-    .single();
+  const { error } = await supabase.from("tenants").insert({
+    name,
+    slug,
+    settings: email ? { bootstrap_admin_email: email } : {},
+  });
 
   if (error) throw new Error(error.message);
 
   revalidatePath("/admin");
-  redirect(`/admin/t/${data.id}`);
+  redirect(`/admin/t/${slug}`);
 }

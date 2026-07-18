@@ -1,4 +1,6 @@
+import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
+import { getAdminTenant } from "@/lib/auth";
 import { formatBRL, formatDateBR } from "@/lib/format";
 
 export const dynamic = "force-dynamic";
@@ -16,15 +18,17 @@ const STATUS_LABEL: Record<string, string> = {
 export default async function TenantOrdersPage({
   params,
 }: {
-  params: Promise<{ tenantId: string }>;
+  params: Promise<{ tenantSlug: string }>;
 }) {
-  const { tenantId } = await params;
+  const { tenantSlug } = await params;
+  const tenant = await getAdminTenant(tenantSlug);
+  if (!tenant) notFound();
   const supabase = await createClient();
 
   const { data: orders } = await supabase
     .from("orders")
     .select("id, status, customer_name, customer_email, total_cents, created_at")
-    .eq("tenant_id", tenantId)
+    .eq("tenant_id", tenant.id)
     .order("created_at", { ascending: false })
     .limit(50);
 

@@ -1,5 +1,7 @@
 import Link from "next/link";
+import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
+import { getAdminTenant } from "@/lib/auth";
 import { formatBRL } from "@/lib/format";
 
 export const dynamic = "force-dynamic";
@@ -7,9 +9,12 @@ export const dynamic = "force-dynamic";
 export default async function TenantDashboard({
   params,
 }: {
-  params: Promise<{ tenantId: string }>;
+  params: Promise<{ tenantSlug: string }>;
 }) {
-  const { tenantId } = await params;
+  const { tenantSlug } = await params;
+  const tenant = await getAdminTenant(tenantSlug);
+  if (!tenant) notFound();
+
   const supabase = await createClient();
 
   const [{ count: productCount }, { count: orderCount }, { data: paidAgg }] =
@@ -17,15 +22,15 @@ export default async function TenantDashboard({
       supabase
         .from("products")
         .select("id", { count: "exact", head: true })
-        .eq("tenant_id", tenantId),
+        .eq("tenant_id", tenant.id),
       supabase
         .from("orders")
         .select("id", { count: "exact", head: true })
-        .eq("tenant_id", tenantId),
+        .eq("tenant_id", tenant.id),
       supabase
         .from("orders")
         .select("paid_cents")
-        .eq("tenant_id", tenantId)
+        .eq("tenant_id", tenant.id)
         .eq("status", "paid"),
     ]);
 
@@ -56,13 +61,13 @@ export default async function TenantDashboard({
 
       <div className="flex gap-3">
         <Link
-          href={`/admin/t/${tenantId}/inventario`}
+          href={`/admin/t/${tenantSlug}/inventario`}
           className="rounded-md bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700"
         >
           Gerenciar produtos e tarifas
         </Link>
         <Link
-          href={`/admin/t/${tenantId}/operacoes`}
+          href={`/admin/t/${tenantSlug}/operacoes`}
           className="rounded-md border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50"
         >
           Ver pedidos

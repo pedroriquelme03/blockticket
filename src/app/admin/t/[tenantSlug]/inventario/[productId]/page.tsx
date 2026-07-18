@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
+import { getAdminTenant } from "@/lib/auth";
 import { formatBRL, formatDateBR } from "@/lib/format";
 import { WEEKDAY_LABELS, formatWeekdays } from "@/lib/admin-helpers";
 import {
@@ -34,15 +35,18 @@ function WeekdayChecks() {
 export default async function ProductEditPage({
   params,
 }: {
-  params: Promise<{ tenantId: string; productId: string }>;
+  params: Promise<{ tenantSlug: string; productId: string }>;
 }) {
-  const { tenantId, productId } = await params;
+  const { tenantSlug, productId } = await params;
+  const tenant = await getAdminTenant(tenantSlug);
+  if (!tenant) notFound();
   const supabase = await createClient();
 
   const { data: product } = await supabase
     .from("products")
     .select("id, name, slug, type, is_active")
     .eq("id", productId)
+    .eq("tenant_id", tenant.id)
     .maybeSingle();
   if (!product) notFound();
 
@@ -69,7 +73,8 @@ export default async function ProductEditPage({
 
   const hidden = (
     <>
-      <input type="hidden" name="tenant_id" value={tenantId} />
+      <input type="hidden" name="tenant_id" value={tenant.id} />
+      <input type="hidden" name="tenant_slug" value={tenantSlug} />
       <input type="hidden" name="product_id" value={productId} />
     </>
   );
@@ -85,7 +90,7 @@ export default async function ProductEditPage({
     <div className="space-y-8">
       <div>
         <Link
-          href={`/admin/t/${tenantId}/inventario`}
+          href={`/admin/t/${tenantSlug}/inventario`}
           className="text-sm text-blue-600"
         >
           ← Produtos

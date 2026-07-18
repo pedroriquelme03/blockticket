@@ -21,6 +21,7 @@ export async function createDomainAction(formData: FormData) {
     throw new Error("Informe um domínio válido (ex.: ingressos.aquamania.com.br)");
   }
 
+  const tenantSlug = String(formData.get("tenant_slug") ?? "");
   const supabase = await createClient();
   const { error } = await supabase
     .from("tenant_domains")
@@ -29,14 +30,14 @@ export async function createDomainAction(formData: FormData) {
     if (error.code === "23505") throw new Error("Este domínio já está cadastrado.");
     throw new Error(error.message);
   }
-  revalidatePath(`/admin/t/${tenantId}/site`);
+  revalidatePath(`/admin/t/${tenantSlug}/site`);
 }
 
 export async function deleteDomainAction(formData: FormData) {
-  const tenantId = String(formData.get("tenant_id") ?? "");
+  const tenantSlug = String(formData.get("tenant_slug") ?? "");
   const id = String(formData.get("id") ?? "");
   const supabase = await createClient();
   const { error } = await supabase.from("tenant_domains").delete().eq("id", id);
   if (error) throw new Error(error.message);
-  revalidatePath(`/admin/t/${tenantId}/site`);
+  revalidatePath(`/admin/t/${tenantSlug}/site`);
 }

@@ -17,7 +17,7 @@ export default async function AdminRoot() {
   if (!platform) {
     const { data: memberships } = await supabase
       .from("memberships")
-      .select("tenant_id")
+      .select("tenant_id, tenants(slug)")
       .eq("user_id", user.id);
 
     if (!memberships || memberships.length === 0) {
@@ -35,7 +35,10 @@ export default async function AdminRoot() {
         </div>
       );
     }
-    redirect(`/admin/t/${memberships[0].tenant_id}`);
+    const rel = (memberships[0] as { tenants: { slug: string } | { slug: string }[] })
+      .tenants;
+    const t = Array.isArray(rel) ? rel[0] : rel;
+    redirect(`/admin/t/${t.slug}`);
   }
 
   // --- Platform admin (FozDev): visão de todos os clientes. ---
@@ -80,7 +83,7 @@ export default async function AdminRoot() {
                     <td className="px-4 py-2">{t.status}</td>
                     <td className="px-4 py-2 text-right">
                       <Link
-                        href={`/admin/t/${t.id}`}
+                        href={`/admin/t/${t.slug}`}
                         className="text-blue-600 hover:underline"
                       >
                         Acessar painel →

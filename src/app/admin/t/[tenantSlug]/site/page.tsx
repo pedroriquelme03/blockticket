@@ -1,4 +1,6 @@
+import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
+import { getAdminTenant } from "@/lib/auth";
 import { createDomainAction, deleteDomainAction } from "./actions";
 
 export const dynamic = "force-dynamic";
@@ -6,15 +8,17 @@ export const dynamic = "force-dynamic";
 export default async function DomainsPage({
   params,
 }: {
-  params: Promise<{ tenantId: string }>;
+  params: Promise<{ tenantSlug: string }>;
 }) {
-  const { tenantId } = await params;
+  const { tenantSlug } = await params;
+  const tenant = await getAdminTenant(tenantSlug);
+  if (!tenant) notFound();
   const supabase = await createClient();
 
   const { data: domains } = await supabase
     .from("tenant_domains")
     .select("id, hostname, created_at")
-    .eq("tenant_id", tenantId)
+    .eq("tenant_id", tenant.id)
     .order("created_at");
 
   return (
@@ -48,7 +52,8 @@ export default async function DomainsPage({
                     <td className="px-4 py-2 font-mono">{d.hostname}</td>
                     <td className="px-4 py-2 text-right">
                       <form action={deleteDomainAction}>
-                        <input type="hidden" name="tenant_id" value={tenantId} />
+                        <input type="hidden" name="tenant_id" value={tenant.id} />
+                        <input type="hidden" name="tenant_slug" value={tenantSlug} />
                         <input type="hidden" name="id" value={d.id} />
                         <button className="text-xs text-red-600 hover:underline">
                           Remover
@@ -66,7 +71,8 @@ export default async function DomainsPage({
           action={createDomainAction}
           className="mt-3 flex flex-wrap items-end gap-3 rounded-lg border border-slate-200 bg-white p-4"
         >
-          <input type="hidden" name="tenant_id" value={tenantId} />
+          <input type="hidden" name="tenant_id" value={tenant.id} />
+          <input type="hidden" name="tenant_slug" value={tenantSlug} />
           <div className="flex-1">
             <label className="block text-xs text-slate-500">Domínio</label>
             <input

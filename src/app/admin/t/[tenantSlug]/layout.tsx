@@ -9,10 +9,10 @@ export default async function TenantAdminLayout({
   params,
 }: {
   children: React.ReactNode;
-  params: Promise<{ tenantId: string }>;
+  params: Promise<{ tenantSlug: string }>;
 }) {
-  const { tenantId } = await params;
-  const { tenant, isPlatform, role, allowed } = await getTenantAccess(tenantId);
+  const { tenantSlug } = await params;
+  const { tenant, isPlatform, role, allowed } = await getTenantAccess(tenantSlug);
 
   if (!allowed || !tenant) {
     return (
@@ -33,7 +33,7 @@ export default async function TenantAdminLayout({
   return (
     <div className="mx-auto flex max-w-6xl gap-6 px-4 py-6">
       <TenantSidebar
-        tenantId={tenantId}
+        tenantSlug={tenantSlug}
         tenantName={tenant.name}
         subtitle={isPlatform ? "acesso plataforma" : (role ?? "")}
         isPlatform={isPlatform}
