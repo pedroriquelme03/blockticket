@@ -63,6 +63,12 @@ export default async function TenantAdminLayout({
         >
           Pedidos
         </Link>
+        <Link
+          href={`${base}/dominios`}
+          className="px-4 py-2 text-slate-600 hover:text-slate-900"
+        >
+          Domínios
+        </Link>
       </nav>
 
       <div>{children}</div>
